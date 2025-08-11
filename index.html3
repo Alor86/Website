@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AI Game Builder — Demo</title>
+<style>
+  :root{
+    --bg:#0f1720; --card:#0b1220; --muted:#9aa7b2; --accent:#ff7a18;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(180deg,#071026 0%, #0b1720 100%);color:#e6eef6;min-height:100vh}
+  header{padding:14px 18px;background:linear-gradient(90deg,#071727,#0b1630);display:flex;align-items:center;justify-content:space-between}
+  header h1{margin:0;font-size:18px}
+  .container{padding:18px;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:12px}
+  .topbar{display:flex;gap:8px;align-items:center}
+  button{background:var(--accent);border:none;color:#061018;padding:10px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+  .ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:var(--muted);padding:8px 10px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .col{flex:1;min-width:260px}
+  .small{font-size:13px;color:var(--muted)}
+  input,textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+  textarea{min-height:88px;resize:vertical}
+  #loginPopup{position:fixed;inset:0;background:rgba(1,6,10,0.65);display:flex;align-items:center;justify-content:center;z-index:999}
+  #loginBox{width:320px;background:#06131a;padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);text-align:center}
+  .fingerprint{width:92px;height:92px;margin:10px auto;background:url('https://i.ibb.co/T8B3bnP/fingerprint.png') center/cover;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6));animation:scan 1s linear infinite}
+  @keyframes scan{0%{transform:scale(1);filter:brightness(.9)}50%{transform:scale(1.06);filter:brightness(1.4)}100%{transform:scale(1);filter:brightness(.9)}}
+  .scanText{color:var(--muted);font-size:13px;margin-top:6px}
+  .success{width:66px;height:66px;border-radius:50%;border:4px solid #2ed573;margin:10px auto;display:none;animation:pop .35s ease}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  #nav{display:flex;gap:8px}
+  .link{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+  .previewBox{background:#08121a;border-radius:10px;padding:10px;text-align:center}
+  .thumb{width:95%;max-width:420px;border-radius:8px;display:block;margin:8px auto}
+  .hudPhone{width:180px;height:320px;background:linear-gradient(180deg,#06131a,#0b1a27);border-radius:12px;margin:8px auto;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+  .hudBtn{position:absolute;background:linear-gradient(180deg,#ffb87a,#ff7a18);color:#061018;font-weight:700;border-radius:12px;display:flex;align-items:center;justify-content:center;touch-action:none}
+  .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);color:var(--muted);margin:4px;font-size:13px}
+  footer{padding:10px;text-align:center;color:var(--muted);font-size:13px}
+  .danger{background:#ff4d4f;color:#fff}
+  @media(min-width:900px){.container{grid-template-columns:2fr 1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;gap:12px;align-items:center">
+    <img src="" alt="" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(45deg,#ff7a18,#ffd07a)"/>
+    <h1>AI Game Builder — Demo</h1>
+    <div style="margin-left:10px;color:var(--muted);font-size:13px">Device:&nbsp;<code id="deviceId" style="background:transparent;border:none;color:var(--muted)"></code></div>
+  </div>
+  <div id="nav">
+    <button class="ghost" onclick="openDashboard()">My Dashboard</button>
+    <button onclick="openPublish()">Publish</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- left: creator -->
+  <div class="card">
+    <div class="row" style="align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-weight:700;font-size:16px">Create a Game — Guided</div>
+        <div class="small">AI-guided questions, instant previews, HUD editor, one-free-per-device enforcement.</div>
+      </div>
+      <div style="text-align:right">
+        <div class="small">Account: <span id="userEmail">Guest</span></div>
+        <div style="margin-top:6px"><button onclick="openLogin()">Sign In</button></div>
+      </div>
+    </div>
+
+    <hr style="border:none;height:1px;background:rgba(255,255,255,0.02);margin:12px 0"/>
+
+    <!-- Trial / Premium -->
+    <div class="row" style="gap:10px;align-items:center;margin-bottom:12px">
+      <div class="col">
+        <div class="small">Try it once for free on this device</div>
+        <button id="freeBtn" onclick="startFree()">Use once free</button>
+      </div>
+      <div class="col">
+        <div class="small">Unlimited games — Premium ₹99 / month</div>
+        <button onclick="buyPremium()">Buy Premium (placeholder)</button>
+      </div>
+    </div>
+
+    <!-- AI question & answer UI -->
+    <div class="row" style="gap:12px">
+      <div class="col">
+        <div id="aiCard" class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:700">AI Assistant</div>
+            <div class="small" id="progress">Q 0 / 20</div>
+          </div>
+
+          <div id="compliment" style="margin-top:8px;color:#a7f3d0;font-weight:600"></div>
+
+          <div style="margin-top:12px">
+            <div id="questionText" style="font-size:15px;font-weight:700;color:#dff3ff">Tell me something about your game to start — a mood, theme, or title.</div>
+            <textarea id="answerInput" placeholder="Write your answer here..." ></textarea>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <button onclick="submitAnswer()">Save & Next</button>
+              <button class="ghost" onclick="dontDescribe()">Didn't describe properly</button>
+              <button class="ghost" onclick="skipQuestion()">Skip</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="small">Draft summary</div>
+            <div id="summary" style="margin-top:8px"></div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <div class="chip" onclick="quickFill('Fantasy')">Fantasy</div>
+            <div class="chip" onclick="quickFill('Cyberpunk')">Cyberpunk</div>
+            <div class="chip" onclick="quickFill('Gangster')">Gangster</div>
+            <div class="chip" onclick="quickFill('Racing')">Racing</div>
+            <div class="chip" onclick="quickFill('Puzzle')">Puzzle</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: preview + HUD -->
+      <div class="col">
+        <div class="card previewBox">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:700">Instant Preview</div>
+            <div class="small">Live</div>
+          </div>
+          <img id="previewImg" class="thumb" src="" alt="preview" style="display:none"/>
+          <div id="previewText" class="small" style="margin-top:8px">Preview will appear after theme & title.</div>
+
+          <hr style="margin:10px 0;border:none;height:1px;background:rgba(255,255,255,0.02)"/>
+
+          <div style="font-weight:700">Playable Demo (stub)</div>
+          <div class="small" style="margin-top:6px">Tap play to open a short HTML5 demo (placeholder)</div>
+          <div style="text-align:center;margin-top:8px">
+            <button onclick="playDemo()" class="ghost">Play Demo</button>
+            <button onclick="finalize()" style="margin-left:8px">Finalize</button>
+          </div>
+
+          <hr style="margin:12px 0;border:none;height:1px;background:rgba(255,255,255,0.02)"/>
+
+          <div style="font-weight:700">HUD Editor (mobile preview)</div>
+          <div class="hudPhone" id="hudPhone">
+            <!-- dynamic buttons appear here -->
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="addHud()">Add Button</button>
+            <button class="ghost" onclick="clearHud()">Clear HUD</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- right: account & activity -->
+  <div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">Account</div>
+        <div class="small" id="accountStatus">Guest</div>
+      </div>
+      <div style="margin-top:8px" id="accountBox">
+        <div class="small">Email: <span id="acctEmail">Not signed in</span></div>
+        <div class="small">Premium: <span id="acctPremium">No</span></div>
+        <div style="margin-top:8px">
+          <button onclick="openLogin()">Sign In / Verify</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div style="font-weight:700">Activity & Purchases</div>
+      <div id="activityList" class="small" style="margin-top:8px;max-height:260px;overflow:auto"></div>
+      <div style="margin-top:10px">
+        <button class="ghost" onclick="downloadJSON()">Download Project (JSON)</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div style="font-weight:700">Tips</div>
+      <div class="small" style="margin-top:8px">Use the chips for quick choices. After finalizing you can download a project JSON to share with developers.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="small">Demo • No real payments • Play Store upload is a placeholder</footer>
+
+<!-- Login Popup -->
+<div id="loginPopup" style="display:none;position:fixed;inset:0;background:rgba(2,6,12,0.6);z-index:999;align-items:center;justify-content:center">
+  <div style="width:320px;background:#071829;padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);text-align:center;margin:auto">
+    <div style="font-weight:800;margin-bottom:6px">Verify Account</div>
+    <div id="fingerWrap" style="margin:8px 0">
+      <div class="fingerprint" id="fingerprint"></div>
+      <div class="scanText" id="scanText">Tap fingerprint to scan</div>
+      <div class="success" id="successCheck"></div>
+    </div>
+    <input id="loginEmail" placeholder="Email (optional)" style="background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:inherit" />
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="simulateFingerprint()" style="flex:1">🔒 Fingerprint</button>
+      <button class="ghost" onclick="sendOtp()">📩 Send OTP</button>
+    </div>
+    <div style="margin-top:8px">
+      <input id="otpInput" placeholder="Enter OTP (demo:1234)" style="background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:inherit" />
+      <div style="margin-top:8px"><button onclick="verifyOtp()">Verify OTP</button></div>
+    </div>
+    <div style="margin-top:12px"><button class="ghost" onclick="closeLogin()">Close</button></div>
+  </div>
+</div>
+
+<script>
+/* ---------- device id + local storage setup ---------- */
+const DEV_KEY = 'ag_demo_device_v1';
+const TRIAL_KEY = 'ag_demo_device_used_v1';
+const SESSION_KEY = 'ag_demo_session_v1';
+
+function getDeviceId(){
+  let id = localStorage.getItem(DEV_KEY);
+  if(!id){ id = 'dev-'+Math.random().toString(36).slice(2,10)+'-'+Date.now().toString(36); localStorage.setItem(DEV_KEY,id); }
+  return id;
+}
+document.getElementById('deviceId').innerText = getDeviceId();
+
+/* ---------- session state ---------- */
+let state = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+if(!state.answers) state.answers = {}; 
+if(!state.activity) state.activity = [];
+if(!state.hud) state.hud = {elements:[]};
+saveState();
+
+function saveState(){ localStorage.setItem(SESSION_KEY, JSON.stringify(state)); renderSummary(); renderActivity(); renderHud(); renderAccountInfo(); updateProgress(); }
+
+function pushActivity(item){ state.activity.unshift({ts: new Date().toISOString(), ...item}); saveState(); }
+
+/* ---------- login / account ---------- */
+function openLogin(){
+  document.getElementById('loginPopup').style.display = 'flex';
+}
+function closeLogin(){
+  document.getElementById('loginPopup').style.display = 'none';
+}
+function simulateFingerprint(){
+  const fp = document.getElementById('fingerprint');
+  const text = document.getElementById('scanText');
+  const success = document.getElementById('successCheck');
+  fp.style.display='block'; text.innerText='Scanning fingerprint...'; success.style.display='none';
+  if(navigator.vibrate) navigator.vibrate([40,40,40]);
+  setTimeout(()=>{ fp.style.display='none'; success.style.display='block'; if(navigator.vibrate) navigator.vibrate([120]); setTimeout(()=>{ finishLogin(); },900); }, 2200);
+}
+function sendOtp(){ alert('Demo OTP is 1234 — it is auto-filled for convenience.'); document.getElementById('otpInput').value='1234'; }
+function verifyOtp(){
+  const val = document.getElementById('otpInput').value.trim();
+  if(val==='1234'){
+    finishLogin();
+  } else alert('Wrong OTP (demo:1234)');
+}
+function finishLogin(){
+  const email = (document.getElementById('loginEmail').value || 'user@demo').trim();
+  state.user = { email, premium:false, signedAt: new Date().toISOString(), device: getDeviceId() };
+  pushActivity({type:'signin', detail: email});
+  closeLogin(); saveState();
+  document.getElementById('loginPopup').style.display='none';
+  alert('Signed in as '+email);
+}
+
+/* ---------- trial / premium enforcement ---------- */
+function startFree(){
+  const usedDevices = JSON.parse(localStorage.getItem(TRIAL_KEY) || '[]');
+  const thisDev = getDeviceId();
+  if(usedDevices.includes(thisDev)){
+    alert('Free trial on this device already used. Please buy Premium to continue.');
+    return;
+  }
+  // allow one free run: mark used now
+  usedDevices.push(thisDev); localStorage.setItem(TRIAL_KEY, JSON.stringify(usedDevices));
+  state.usedFreeOn = thisDev; pushActivity({type:'trial_started', detail:thisDev});
+  saveState();
+  compliment('Nice choice! Let’s design your first game.');
+}
+function buyPremium(){
+  // placeholder — integrate Razorpay later
+  if(!state.user){ alert('Sign in to buy Premium'); openLogin(); return; }
+  state.user.premium = true; pushActivity({type:'purchase', detail:'Premium ₹99/mo'}); saveState(); alert('Premium activated (demo)');
+}
+
+/* ---------- adaptive Q&A (local planner fallback) ---------- */
+const QUESTION_ORDER = [
+  {k:'theme', q:'Theme / setting (fantasy, cyberpunk, gangster, space)'},
+  {k:'name', q:'Game name (title)'},
+  {k:'genre', q:'Genre (platformer, shooter, racing, puzzle, idle)'},
+  {k:'platform', q:'Target platform (Web, Android, iOS)'},
+  {k:'audience', q:'Target audience / difficulty'},
+  {k:'core', q:'One-sentence core loop (what player does)'},
+  {k:'player', q:'Player character description'},
+  {k:'enemies', q:'Primary enemies / obstacles'},
+  {k:'controls', q:'Controls (tap, swipe, virtual joystick)'},
+  {k:'levels', q:'Level structure (levels, endless, procedural)'},
+  {k:'progression', q:'Progression & rewards (coins, XP, upgrades)'},
+  {k:'art', q:'Art style (pixel, vector, 2D sprites)'},
+  {k:'sound', q:'Sound & music vibe'},
+  {k:'hud', q:'HUD elements (health, score, minimap)'},
+  {k:'monetize', q:'Monetization (ads, premium, IAP)'},
+  {k:'special', q:'Special mechanics (vehicles, powerups)'},
+  {k:'physics', q:'Physics feel (arcade vs realistic)'},
+  {k:'social', q:'Social features (leaderboards, share)'},
+  {k:'access', q:'Accessibility / localization needs'},
+  {k:'export', q:'Export target (Unity, Unreal, Web)'}
+];
+
+let currentIndex = 0;
+
+function updateProgress(){ document.getElementById('progress').innerText = `Q ${Object.keys(state.answers).length} / ${QUESTION_ORDER.length}`; }
+
+function getNextQuestion(){
+  // find first missing slot
+  for(let i=0;i<QUESTION_ORDER.length;i++){
+    const key = QUESTION_ORDER[i].k;
+    if(!state.answers[key]) { currentIndex = i; return QUESTION_ORDER[i]; }
+  }
+  return null;
+}
+
+function renderSummary(){
+  const s = document.getElementById('summary');
+  const entries = Object.entries(state.answers);
+  if(!entries.length){ s.innerHTML = '<div class="small">No answers yet</div>'; return; }
+  s.innerHTML = entries.map(([k,v])=>`<div style="margin:6px 0"><b>${k}:</b> ${escapeHtml(v)} <button class="ghost" onclick="editSlot('${k}')">Edit</button></div>`).join('');
+}
+
+function renderActivity(){
+  const el = document.getElementById('activityList');
+  el.innerHTML = state.activity.map(a=>`<div style="margin-bottom:8px"><b>${a.type}</b> • ${a.detail || ''} <div class="small">${new Date(a.ts).toLocaleString()}</div></div>`).join('');
+}
+
+/* question UI init */
+function initQuestionUI(){
+  const q = getNextQuestion();
+  if(q){ setQuestion(q.q); } else { setQuestion('All done — ready to finalize?'); }
+  updateProgress();
+}
+function setQuestion(text){ document.getElementById('questionText').innerText = text; document.getElementById('answerInput').value=''; }
+function submitAnswer(){
+  const val = document.getElementById('answerInput').value.trim();
+  if(!val){ alert('Please type an answer or use a quick chip'); return; }
+  const q = QUESTION_ORDER[currentIndex];
+  if(q){ state.answers[q.k] = val; pushActivity({type:'answered', detail:`${q.k}: ${val}`}); saveState(); compliment('Nice! That adds great detail.'); generatePreview(); initQuestionUI(); } else { alert('No question selected'); }
+}
+function skipQuestion(){ const q = QUESTION_ORDER[currentIndex]; if(q){ state.answers[q.k]='SKIPPED'; pushActivity({type:'skipped', detail:q.k}); saveState(); initQuestionUI(); } }
+function dontDescribe(){ // open mini sub-flow: ask 3 quick picks
+  const q = QUESTION_ORDER[currentIndex]; if(!q){alert('Nothing to expand'); return;}
+  const preset = prompt('Choose example or type "preset" to see options. Example: "fast arcade", "cinematic"');
+  if(preset){ state.answers[q.k] = preset; pushActivity({type:'clarified', detail:`${q.k}: ${preset}`}); saveState(); compliment('Thanks — that really clarifies it.'); initQuestionUI(); }
+}
+function quickFill(v){ document.getElementById('answerInput').value = v; }
+
+/* render preview image + text from theme/name */
+function generatePreview(){
+  const name = state.answers.name || 'Untitled';
+  const theme = state.answers.theme || 'mysterious';
+  const url = `https://dummyimage.com/720x360/0b1220/9dd2ff&text=${encodeURIComponent(name+' - '+theme)}`;
+  document.getElementById('previewImg').src = url; document.getElementById('previewImg').style.display='block';
+  document.getElementById('previewText').innerText = `${name} — ${theme}`;
+}
+
+/* compliments */
+function compliment(msg){
+  const el = document.getElementById('compliment');
+  const texts = ['Nice!','Love that idea!','Great choice!','That will look awesome!','Solid pick!'];
+  el.innerText = msg || texts[Math.floor(Math.random()*texts.length)];
+  setTimeout(()=>{ el.innerText=''; },2600);
+}
+
+/* edit slot */
+function editSlot(k){
+  const qindex = QUESTION_ORDER.findIndex(i=>i.k===k);
+  if(qindex>=0){ currentIndex = qindex; setQuestion(QUESTION_ORDER[qindex].q); document.getElementById('answerInput').value = state.answers[k] || ''; }
+}
+
+/* HUD editor */
+function renderHud(){
+  const container = document.getElementById('hudPhone');
+  container.innerHTML = '';
+  state.hud.elements.forEach(el=>{
+    const d = document.createElement('div');
+    d.className = 'hudBtn';
+    d.style.left = (el.x||20)+'px';
+    d.style.top = (el.y||20)+'px';
+    d.style.width = (el.w||54)+'px';
+    d.style.height = (el.h||40)+'px';
+    d.style.fontSize = '12px';
+    d.style.borderRadius = '8px';
+    d.innerText = el.label || 'Btn';
+    d.style.position='absolute';
+    d.style.touchAction='none';
+    // drag
+    let startX, startY, origX, origY;
+    d.addEventListener('pointerdown', (ev)=>{
+      ev.preventDefault(); d.setPointerCapture(ev.pointerId);
+      startX = ev.clientX; startY = ev.clientY; origX = parseInt(d.style.left); origY = parseInt(d.style.top);
+      function move(mv){ const nx = origX + (mv.clientX - startX); const ny = origY + (mv.clientY - startY); d.style.left = Math.max(4,Math.min(120,nx))+'px'; d.style.top = Math.max(4,Math.min(260,ny))+'px'; }
+      function up(){ d.releasePointerCapture(ev.pointerId); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); // save
+        const idx = state.hud.elements.findIndex(x=>x.id===el.id); if(idx>=0){ state.hud.elements[idx].x = parseInt(d.style.left); state.hud.elements[idx].y = parseInt(d.style.top); saveState(); }
+      }
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    });
+    container.appendChild(d);
+  });
+}
+function addHud(){
+  const id = 'b-'+Math.random().toString(36).slice(2,8);
+  state.hud.elements.push({id,label:'BTN',x:20,y:200,w:56,h:38}); pushActivity({type:'hud_add',detail:id}); saveState(); renderHud();
+}
+function clearHud(){ state.hud={elements:[]}; pushActivity({type:'hud_cleared'}); saveState(); renderHud(); }
+
+/* demo playable */
+function playDemo(){ alert('Play demo: this would run a short HTML5 prototype (placeholder).'); pushActivity({type:'demo_play'}); }
+
+/* finalize & export */
+function finalize(){
+  const conf = confirm('Finalize game and create downloadable project JSON?');
+  if(!conf) return;
+  pushActivity({type:'finalize',detail: state.answers.name || 'Untitled'});
+  saveState();
+  downloadJSON();
+  alert('Finalized — project JSON downloaded (demo).');
+}
+function downloadJSON(){
+  const payload = { meta:{device:getDeviceId(), user: state.user||null, createdAt:new Date().toISOString()}, answers:state.answers, hud:state.hud };
+  const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=(state.answers.name||'game')+'-project.json'; a.click();
+}
+
+/* Publish placeholder */
+function openPublish(){ alert('Publish flow: in production this will prepare store assets and guide Play Store upload (demo).'); }
+
+/* dashboard & account */
+function openDashboard(){ document.getElementById('acctEmail').innerText = state.user ? state.user.email : 'Guest'; document.getElementById('acctPremium').innerText = state.user && state.user.premium ? 'Yes' : 'No'; document.getElementById('activityList').innerHTML = state.activity.map(a=>`<div style="margin-bottom:8px"><b>${a.type}</b> ${a.detail?('- '+a.detail):''}<div class="small">${new Date(a.ts).toLocaleString()}</div></div>`).join(''); window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* account info render */
+function renderAccountInfo(){ document.getElementById('userEmail').innerText = state.user ? state.user.email : 'Guest'; document.getElementById('acctEmail').innerText = state.user ? state.user.email : 'Not signed in'; document.getElementById('acctPremium').innerText = state.user && state.user.premium ? 'Yes' : 'No'; document.getElementById('accountStatus').innerText = state.user ? 'Signed In' : 'Guest'; }
+
+/* helpers */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[ch])); }
+
+/* initialize */
+initQuestionUI(); renderHud(); renderActivity(); renderAccountInfo();
+
+/* auto start: show login popup so user verifies */
+setTimeout(()=>{ document.getElementById('loginPopup').style.display='flex'; },700);
+</script>
+</body>
+</html>
